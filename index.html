@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#183b56">
+<title>My Computer Learning Tracker</title>
+<style>
+:root{--navy:#183b56;--blue:#2878a8;--pale:#eef5f9;--green:#24845a;--red:#b94b4b;--ink:#20313d;--muted:#647783;--card:#fff}
+*{box-sizing:border-box}body{margin:0;background:#f3f6f8;color:var(--ink);font:16px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:linear-gradient(120deg,#183b56,#2878a8);color:white;padding:24px 18px 28px}
+header h1{font-size:23px;margin:0 0 6px}header p{margin:0;color:#e3edf3;font-size:14px}
+main{max-width:900px;margin:auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 14px}
+.card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 2px 10px #183b5610;margin-bottom:14px}
+.stat strong{display:block;font-size:25px;color:var(--navy);margin-top:5px}.label{font-size:13px;color:var(--muted)}
+h2{font-size:18px;margin:0 0 14px;color:var(--navy)}
+.row{display:grid;grid-template-columns:1fr 110px;gap:12px;align-items:center;margin:13px 0}
+.row label{font-weight:600}.row small{display:block;color:var(--muted);font-weight:400;margin-top:2px}
+input[type=number],input[type=date],textarea{width:100%;border:1px solid #ccd8df;border-radius:9px;padding:11px;font:inherit;background:white;color:var(--ink)}
+textarea{min-height:72px;resize:vertical}
+button{border:0;border-radius:9px;padding:11px 15px;font:600 14px system-ui;cursor:pointer}
+.primary{background:var(--navy);color:white}.secondary{background:var(--pale);color:var(--navy)}.danger{background:#fff0f0;color:var(--red)}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.progress{height:12px;background:#e5edf1;border-radius:20px;overflow:hidden;margin:10px 0 5px}.bar{height:100%;width:0;background:var(--green);border-radius:20px;transition:width .2s}
+.status{font-size:13px;color:var(--muted)}
+.day{display:grid;grid-template-columns:90px 1fr 48px;gap:8px;align-items:center;margin:10px 0;font-size:13px}
+.day .track{height:10px;background:#e8eef1;border-radius:20px;overflow:hidden}.day .fill{height:100%;background:var(--blue)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 7px;border-bottom:1px solid #e8eef1}th{color:var(--muted);font-weight:600}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:8px 12px 25px}
+@media(max-width:600px){.grid{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:span 2}.row{grid-template-columns:1fr 92px}main{padding:12px}.card{padding:14px}.history-wrap{overflow-x:auto}}
+</style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#183b56">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<header><h1>My Computer Learning Tracker</h1><p>Build a daily learning habit • Target: 2 hours per day</p></header>
+<main>
+  <section class="grid">
+    <div class="card stat"><span class="label">Today's progress</span><strong id="todayTotal">0 / 120 min</strong><div class="status" id="todayStatus">Not started yet</div></div>
+    <div class="card stat"><span class="label">Current streak</span><strong id="streak">0 days</strong><div class="status">Days meeting all 3 targets</div></div>
+    <div class="card stat"><span class="label">Total learning time</span><strong id="allTime">0 hrs</strong><div class="status">Across all saved days</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Daily learning entry</h2>
+    <div class="row"><label for="date">Date</label><input id="date" type="date"></div>
+    <div class="row"><label for="ai">AI Tools <small>Daily target: 60 minutes</small></label><input id="ai" type="number" min="0" max="1440" value="0"></div>
+    <div class="row"><label for="office">MS Office <small>Daily target: 45 minutes</small></label><input id="office" type="number" min="0" max="1440" value="0"></div>
+    <div class="row"><label for="typing">Typing practice <small>Daily target: 15 minutes</small></label><input id="typing" type="number" min="0" max="1440" value="0"></div>
+    <label class="label" for="notes">What did you learn today? (optional)</label>
+    <textarea id="notes" placeholder="Example: Practised Excel filters; learned to use ChatGPT..."></textarea>
+    <div class="progress"><div class="bar" id="todayBar"></div></div><div class="status" id="progressText">0% of your 120-minute daily target</div>
+    <div class="actions"><button class="primary" id="save">Save today's progress</button><button class="secondary" id="clear">Clear entry</button></div>
+    <p class="status" id="message" role="status"></p>
+  </section>
+
+  <section class="card">
+    <h2>Last 7 days</h2><div id="weekChart"></div>
+  </section>
+
+  <section class="card">
+    <h2>Learning history</h2>
+    <div class="history-wrap"><table><thead><tr><th>Date</th><th>AI</th><th>Office</th><th>Typing</th><th>Total</th><th></th></tr></thead><tbody id="history"></tbody></table></div>
+    <div id="empty" class="empty">No saved entries yet. Save your first day's progress above.</div>
+    <div class="actions"><button class="secondary" id="exportCsv">Export CSV</button><button class="secondary" id="backup">Download backup</button><button class="secondary" id="restoreBtn">Restore backup</button><input id="restoreFile" type="file" accept="application/json" hidden></div>
+  </section>
+</main>
+<footer>Your entries are saved on this device in this browser. Export a backup before clearing browser data or changing devices.</footer>
+<script>
+const KEY='computerLearningTracker_v1';
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toLocaleDateString('en-CA');
+let records=load();
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
+function persist(){localStorage.setItem(KEY,JSON.stringify(records))}
+function vals(){return {ai:Math.max(0,Number($('ai').value)||0),office:Math.max(0,Number($('office').value)||0),typing:Math.max(0,Number($('typing').value)||0),notes:$('notes').value.trim()}}
+function total(r){return (r.ai||0)+(r.office||0)+(r.typing||0)}
+function met(r){return (r.ai||0)>=60&&(r.office||0)>=45&&(r.typing||0)>=15}
+function dateObj(s){return new Date(s+'T12:00:00')}
+function nice(s){return dateObj(s).toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'})}
+function loadEntry(){const r=records[$('date').value]||{ai:0,office:0,typing:0,notes:''};$('ai').value=r.ai;$('office').value=r.office;$('typing').value=r.typing;$('notes').value=r.notes||'';updatePreview()}
+function updatePreview(){const r=vals(),t=total(r),pct=Math.min(100,Math.round(t/120*100));$('todayTotal').textContent=`${t} / 120 min`;$('todayBar').style.width=pct+'%';$('progressText').textContent=`${pct}% of your 120-minute daily target`;$('todayStatus').textContent=met(r)?'All three daily targets achieved':t>=120?'120 minutes reached — complete each subject target too':'Keep going — every minute counts'}
+function render(){
+ const keys=Object.keys(records).sort().reverse(),sum=keys.reduce((a,k)=>a+total(records[k]),0);
+ $('allTime').textContent=(sum/60).toFixed(1)+' hrs';
+ let streak=0,d=new Date();while(true){const k=d.toLocaleDateString('en-CA');if(records[k]&&met(records[k])){streak++;d.setDate(d.getDate()-1)}else break}
+ $('streak').textContent=streak+' days';
+ const t=records[today()]||{ai:0,office:0,typing:0};$('todayTotal').textContent=`${total(t)} / 120 min`;$('todayStatus').textContent=met(t)?'All three daily targets achieved':'Not all daily targets completed';
+ const body=$('history');body.innerHTML='';$('empty').style.display=keys.length?'none':'block';
+ keys.slice(0,30).forEach(k=>{const r=records[k],tr=document.createElement('tr');tr.innerHTML=`<td>${nice(k)}</td><td>${r.ai||0}m</td><td>${r.office||0}m</td><td>${r.typing||0}m</td><td><b>${total(r)}m</b></td><td><button class="secondary" data-edit="${k}">Edit</button></td>`;body.appendChild(tr)});
+ body.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{$('date').value=b.dataset.edit;loadEntry();window.scrollTo({top:0,behavior:'smooth'})});
+ const chart=$('weekChart');chart.innerHTML='';for(let i=6;i>=0;i--){let dt=new Date();dt.setDate(dt.getDate()-i);let k=dt.toLocaleDateString('en-CA'),r=records[k]||{},n=total(r),label=dt.toLocaleDateString(undefined,{weekday:'short'});let div=document.createElement('div');div.className='day';div.innerHTML=`<span>${label} ${dt.getDate()}</span><div class="track"><div class="fill" style="width:${Math.min(100,n/120*100)}%"></div></div><b>${n}m</b>`;chart.appendChild(div)}
+ updatePreview();
+}
+$('date').value=today();loadEntry();render();
+['ai','office','typing','notes'].forEach(id=>$(id).addEventListener('input',updatePreview));
+$('date').addEventListener('change',loadEntry);
+$('save').onclick=()=>{const k=$('date').value;if(!k){$('message').textContent='Please select a date.';return}records[k]=vals();persist();render();$('message').textContent='Progress saved on this device.'};
+$('clear').onclick=()=>{$('ai').value=0;$('office').value=0;$('typing').value=0;$('notes').value='';updatePreview();$('message').textContent='Entry cleared. Save if you want to replace the selected date with zero.'};
+$('exportCsv').onclick=()=>{const rows=[['Date','AI Tools (min)','MS Office (min)','Typing (min)','Total (min)','Notes'],...Object.keys(records).sort().map(k=>[k,records[k].ai||0,records[k].office||0,records[k].typing||0,total(records[k]),records[k].notes||''])];const csv=rows.map(row=>row.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');download(csv,'computer-learning-progress.csv','text/csv')};
+$('backup').onclick=()=>download(JSON.stringify(records,null,2),'computer-learning-backup.json','application/json');
+$('restoreBtn').onclick=()=>$('restoreFile').click();
+$('restoreFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!obj||Array.isArray(obj)||typeof obj!=='object')throw Error();records={...records,...obj};persist();render();$('message').textContent='Backup restored.'}catch(err){$('message').textContent='Could not read that backup file.'}e.target.value=''};
+function download(content,name,type){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(err => console.log("Offline setup:", err));
+  });
+}
+</script>
+</body></html>
